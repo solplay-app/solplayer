@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SolPlay</string>
+    <string name="tagline">Votre lecteur IPTV nouvelle génération</string>
+
+    <string name="contact_email">stephanegue2018@gmail.com</string>
+    <string name="contact_phone">+225 05 03 06 69 12</string>
+
+    <string name="trial_days">30</string>
+    <string name="trial_active_format">Essai gratuit : %1$d jour(s) restant(s)</string>
+    <string name="trial_expired_title">Votre essai gratuit est terminé</string>
+    <string name="trial_expired_message">Passez à SolPlay Pro pour continuer à profiter de vos chaînes sans interruption.</string>
+
+    <string name="btn_activate_pro">Activer la version Pro</string>
+    <string name="btn_continue_trial">Continuer l\'essai gratuit</string>
+    <string name="btn_contact_us">Nous contacter pour acheter</string>
+
+    <string name="hint_playlist_url">Lien de la playlist M3U</string>
+    <string name="hint_playlist_name">Nom de la playlist (ex: Ma Playlist)</string>
+    <string name="btn_load_playlist">Charger la playlist</string>
+
+    <string name="hint_license_code">Entrez votre code d\'activation Pro</string>
+    <string name="btn_activate">Activer</string>
+    <string name="license_invalid">Code invalide. Contactez-nous pour obtenir votre code.</string>
+    <string name="license_success">Version Pro activée. Merci de votre confiance !</string>
+
+    <string name="about_title">À propos de SolPlay</string>
+</resources>
