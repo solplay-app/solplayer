@@ -143,9 +143,13 @@ class PlaylistActivity : AppCompatActivity() {
                 val intent = Intent(this@PlaylistActivity, ChannelsActivity::class.java)
                 intent.putExtra(ChannelsActivity.EXTRA_CHANNELS, ArrayList(channels))
                 startActivity(intent)
+            } catch (e: PlaylistLoadException) {
+                // Message déjà clair et destiné à l'utilisateur (timeout, serveur, réseau...).
+                binding.progressBar.visibility = android.view.View.GONE
+                Toast.makeText(this@PlaylistActivity, e.message, Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 binding.progressBar.visibility = android.view.View.GONE
-                Toast.makeText(this@PlaylistActivity, "Erreur de chargement : ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@PlaylistActivity, "Erreur de chargement : ${e.message ?: "inconnue"}.", Toast.LENGTH_LONG).show()
             }
         }
     }
