@@ -33,7 +33,11 @@ class SavedPlaylistAdapter(
         val isActive = playlist.id == activeId
 
         val modeLabel = if (playlist.mode == PlaylistMode.XTREAM) "Xtream Codes" else "Lien M3U"
-        val sourceLabel = if (playlist.fromCode != null) " · Code admin" else ""
+        val sourceLabel = when {
+    playlist.fromCode?.startsWith("device:") == true -> " · Assignée par admin"
+    playlist.fromCode != null -> " · Code admin"
+    else -> ""
+}
         holder.name.text = (if (isActive) "✅ " else "") + playlist.name
         holder.details.text = modeLabel + sourceLabel
 
