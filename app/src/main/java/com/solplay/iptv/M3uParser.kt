@@ -16,9 +16,14 @@ object M3uParser {
     /** Télécharge et parse une playlist M3U depuis une URL distante. */
     fun fetchAndParse(playlistUrl: String): List<Channel> {
         val connection = URL(playlistUrl).openConnection() as HttpURLConnection
-        connection.connectTimeout = 15000
-        connection.readTimeout = 15000
+        connection.connectTimeout = 30000
+        connection.readTimeout = 90000
         connection.requestMethod = "GET"
+        connection.instanceFollowRedirects = true
+        connection.setRequestProperty(
+            "User-Agent",
+            "Mozilla/5.0 (Linux; Android 10; SM-A205U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36"
+        )
         connection.connect()
 
         val content = connection.inputStream.bufferedReader().use { it.readText() }
