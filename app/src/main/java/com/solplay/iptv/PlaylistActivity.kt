@@ -140,8 +140,12 @@ class PlaylistActivity : AppCompatActivity() {
                     Toast.makeText(this@PlaylistActivity, "Aucune chaîne trouvée. Vérifiez vos identifiants/lien.", Toast.LENGTH_LONG).show()
                     return@launch
                 }
+                // On stocke la liste en mémoire (ChannelRepository) au lieu de la faire
+                // passer par l'Intent : les grosses playlists (plusieurs milliers de
+                // chaînes) dépassaient la limite de transaction Binder (~1 Mo) et
+                // provoquaient un crash "Failure from system".
+                ChannelRepository.setChannels(channels)
                 val intent = Intent(this@PlaylistActivity, ChannelsActivity::class.java)
-                intent.putExtra(ChannelsActivity.EXTRA_CHANNELS, ArrayList(channels))
                 startActivity(intent)
             } catch (e: PlaylistLoadException) {
                 // Message déjà clair et destiné à l'utilisateur (timeout, serveur, réseau...).
