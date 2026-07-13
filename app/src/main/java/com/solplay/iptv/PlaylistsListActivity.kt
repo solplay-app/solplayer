@@ -35,10 +35,17 @@ class PlaylistsListActivity : AppCompatActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
+   override fun onResume() {
+    super.onResume()
+    refresh()
+    // Vérifie si l'admin a assigné une playlist à la clé de cet appareil
+    // depuis le panneau admin, et l'ajoute automatiquement si oui.
+    lifecycleScope.launch {
+        DevicePlaylistSync.sync(this@PlaylistsListActivity)
         refresh()
     }
+}
+
 
     private fun refresh() {
         val playlists = PlaylistStore.getAll(this)
