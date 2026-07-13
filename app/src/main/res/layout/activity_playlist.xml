@@ -179,7 +179,15 @@
             android:layout_marginTop="24dp"
             android:backgroundTint="@color/solplay_orange"
             android:text="@string/btn_load_playlist"
-            android:textColor="@color/solplay_white" />
+            android:textColor="@color/solplay_white" /> 
+      
+        <Button
+            android:id="@+id/btnMyPlaylists"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:text="Mes playlists" />
 
         <ProgressBar
             android:id="@+id/progressBar"
