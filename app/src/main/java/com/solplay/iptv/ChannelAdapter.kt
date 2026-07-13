@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.squareup.picasso.Picasso
 
 class ChannelAdapter(
-    private val channels: List<Channel>,
+    private var channels: List<Channel>,
     private val onClick: (Channel) -> Unit
 ) : RecyclerView.Adapter<ChannelAdapter.ChannelViewHolder>() {
 
@@ -17,6 +17,12 @@ class ChannelAdapter(
         val logo: ImageView = view.findViewById(R.id.ivChannelLogo)
         val name: TextView = view.findViewById(R.id.tvChannelName)
         val group: TextView = view.findViewById(R.id.tvChannelGroup)
+    }
+
+    /** Remplace la liste affichée (utilisé par les filtres onglet/catégorie/recherche). */
+    fun updateData(newChannels: List<Channel>) {
+        channels = newChannels
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChannelViewHolder {
