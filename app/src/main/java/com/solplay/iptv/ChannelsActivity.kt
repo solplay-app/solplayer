@@ -19,7 +19,7 @@ class ChannelsActivity : AppCompatActivity() {
         binding = ActivityChannelsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-       val channels = channelRepository.channels
+       val channels = ChannelRepository.channels
 
         binding.recyclerChannels.layoutManager = LinearLayoutManager(this)
         binding.recyclerChannels.adapter = ChannelAdapter(channels) { channel ->
