@@ -1,26 +1,24 @@
 package com.solplay.iptv
 
 import android.content.Context
-import java.security.MessageDigest
+import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.tasks.await
 
 /**
  * Gère l'essai gratuit de 30 jours et l'activation de la licence Pro.
  *
- * ATTENTION SÉCURITÉ :
- * Ce système est stocké localement (SharedPreferences). Un utilisateur qui
- * désinstalle/réinstalle l'app ou efface les données réinitialise l'essai.
- * Pour une vraie protection anti-piratage en production, il faut vérifier
- * la licence côté serveur (ex: Firebase, ou ton propre backend) en liant le
- * code d'activation à un identifiant d'appareil (Settings.Secure.ANDROID_ID).
- * La structure ci-dessous est prête à être branchée sur une API distante :
- * il suffit de remplacer validateCodeOffline() par un appel réseau.
+ * L'activation Pro fonctionne désormais via Firebase Realtime Database :
+ * 1. L'app génère une "clé appareil" unique (voir DeviceKeyManager).
+ * 2. Le client envoie cette clé à l'administrateur (email/WhatsApp).
+ * 3. L'administrateur active cette clé depuis le panneau admin (admin_panel.html).
+ * 4. L'app vérifie en ligne le statut de cette clé et, si activée, mémorise
+ *    le statut "licencié" localement pour un fonctionnement hors-ligne ensuite.
  */
 object TrialManager {
 
     private const val PREFS = "solplay_prefs"
     private const val KEY_FIRST_LAUNCH = "first_launch_time"
     private const val KEY_LICENSED = "is_licensed"
-    private const val KEY_LICENSE_CODE = "license_code"
     private const val TRIAL_DAYS = 30L
     private const val MILLIS_PER_DAY = 1000L * 60 * 60 * 24
 
@@ -49,30 +47,26 @@ object TrialManager {
     fun canAccessApp(context: Context): Boolean = isLicensed(context) || isTrialActive(context)
 
     /**
-     * Active la version Pro avec un code fourni par SolPlay (envoyé après achat,
-     * ex: par email/WhatsApp après contact avec stephanegue2018@gmail.com).
-     * Remplace validateCodeOffline() par un appel à ton serveur de licences
-     * pour une vérification sécurisée en production.
+     * Vérifie en ligne (Firebase) si la clé de cet appareil a été activée par
+     * l'administrateur. Nécessite une connexion internet.
+     * Retourne true si activée (et mémorise le statut localement pour un
+     * accès hors-ligne par la suite), false sinon (ou en cas d'erreur réseau).
      */
-    fun activateLicense(context: Context, code: String): Boolean {
-        val trimmed = code.trim()
-        val valid = validateCodeOffline(trimmed)
-        if (valid) {
-            prefs(context).edit()
-                .putBoolean(KEY_LICENSED, true)
-                .putString(KEY_LICENSE_CODE, trimmed)
-                .apply()
+    suspend fun checkOnlineLicense(context: Context): Boolean {
+        val deviceKey = DeviceKeyManager.getDeviceKey(context)
+        return try {
+            val ref = FirebaseDatabase.getInstance()
+                .getReference("licenses")
+                .child(deviceKey)
+                .child("active")
+            val snapshot = ref.get().await()
+            val active = snapshot.getValue(Boolean::class.java) ?: false
+            if (active) {
+                prefs(context).edit().putBoolean(KEY_LICENSED, true).apply()
+            }
+            active
+        } catch (e: Exception) {
+            false
         }
-        return valid
-    }
-
-    private fun validateCodeOffline(code: String): Boolean {
-        // Exemple simple de validation locale par format + checksum.
-        // À remplacer par une vérification serveur pour la production.
-        if (code.length < 10) return false
-        val hash = MessageDigest.getInstance("SHA-256")
-            .digest(code.substring(0, code.length - 2).toByteArray())
-        val checksum = hash.take(1).joinToString("") { "%02x".format(it) }.take(2)
-        return code.endsWith(checksum, ignoreCase = true)
     }
 }
