@@ -22,9 +22,24 @@ plugins {
 // En local (pas de CI), retombe sur "1.0.0" - si tu testes des installations
 // répétées en local, augmente ce nombre à la main ou désinstalle l'ancienne
 // version depuis "Applications et fonctionnalités" avant de réinstaller.
-val appVersion = providers.environmentVariable("GITHUB_RUN_NUMBER")
-    .map { "1.0.$it" }
-    .getOrElse("1.0.0")
+// Priorité de la version :
+//   1. -PreleaseVersion=X.Y.Z (build RELEASE officiel - utilisé par le
+//      workflow CI à partir du tag git "vX.Y.Z") : version stable et
+//      déterministe, identique d'un build à l'autre pour un même tag.
+//   2. GITHUB_RUN_NUMBER (builds CI intermédiaires) : 1.0.<numéro de run>.
+//   3. "1.0.0" en local.
+//
+// Identité stable d'une release à l'autre ("toujours les mêmes clés") :
+// - upgradeUuid ci-dessous est FIGÉ : Windows remplace proprement
+//   l'installation précédente au lieu d'en créer une seconde ;
+// - la clé d'appareil (DeviceKeyManager) et les données de licence sont
+//   stockées dans %APPDATA%\\SolPlay, HORS du dossier d'installation : elles
+//   survivent donc à toute mise à jour/réinstallation, l'utilisateur garde
+//   la même clé et n'a jamais à se réactiver après une mise à jour.
+val appVersion = (project.findProperty("releaseVersion") as? String)?.takeIf { it.isNotBlank() }
+    ?: providers.environmentVariable("GITHUB_RUN_NUMBER")
+        .map { "1.0.$it" }
+        .getOrElse("1.0.0")
 
 group = "com.solplay.desktop"
 version = appVersion
@@ -53,6 +68,11 @@ dependencies {
     // appels utilisant le SDK Android Firebase (indisponible hors Android).
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.json:json:20240303")
+
+    // Génération de QR code pour l'écran d'activation (voir LicenseScreen.kt) —
+    // même bibliothèque que côté Android (QrCodeGenerator.kt), pour un
+    // comportement identique entre les deux versions.
+    implementation("com.google.zxing:core:3.5.3")
 
     testImplementation(kotlin("test"))
 }

@@ -102,9 +102,15 @@ fun HomeScreen(
     // avec les panels IPTV : seuls les flux cessent de fonctionner à la
     // lecture, sans message explicite). Équivalent de
     // ChannelsActivity.checkSubscriptionExpiration.
+    // Le statut complet est conservé (et pas seulement "expiré ou non")
+    // pour pouvoir afficher la DATE D'EXPIRATION DE LA PLAYLIST dans
+    // l'en-tête ci-dessous - information qui n'était visible nulle part
+    // dans l'application jusqu'ici.
+    var accountStatus by remember(playlist.id) { mutableStateOf<XtreamApiClient.AccountStatus?>(null) }
     var expiryMessage by remember(playlist.id) { mutableStateOf<String?>(null) }
     LaunchedEffect(playlist.id) {
         val status = XtreamApiClient.checkAccountStatus(playlist) ?: return@LaunchedEffect
+        accountStatus = status
         if (status.expired) {
             val expiryText = status.expiresAtMillis?.let { TrialManager.formatDate(it) }
             expiryMessage = buildString {
@@ -188,6 +194,25 @@ fun HomeScreen(
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(playlist.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+            // Badge d'expiration de la playlist (abonnement IPTV), visible en
+            // permanence dans l'en-tête : complète la date d'expiration de la
+            // LICENCE du logiciel, déjà visible dans "À propos". Rouge si
+            // l'abonnement est expiré, neutre sinon.
+            accountStatus?.expiresAtMillis?.let { exp ->
+                Surface(
+                    color = if (accountStatus?.expired == true) MaterialTheme.colorScheme.errorContainer
+                            else MaterialTheme.colorScheme.secondaryContainer,
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        (if (accountStatus?.expired == true) "Playlist expirée le " else "Playlist : expire le ") +
+                            TrialManager.formatDate(exp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+            }
             if (currentType == ContentType.LIVE && playlist.extractXtreamCredentials() != null) {
                 TextButton(onClick = {
                     val liveChannels = channelsForType
@@ -210,7 +235,7 @@ fun HomeScreen(
         Spacer(Modifier.height(12.dp))
 
         if (showAbout) {
-            AboutDialog(context = context, onDismiss = { showAbout = false })
+            AboutDialog(context = context, playlist = playlist, onDismiss = { showAbout = false })
         }
 
         TabRow(selectedTabIndex = currentType.ordinal) {

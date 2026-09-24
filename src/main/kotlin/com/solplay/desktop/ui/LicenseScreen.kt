@@ -1,13 +1,16 @@
 package com.solplay.desktop.ui
 
 import android.content.Context
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
+import com.solplay.desktop.core.QrCodeGenerator
 import com.solplay.iptv.DeviceKeyManager
 import com.solplay.iptv.TrialManager
 import kotlinx.coroutines.delay
@@ -18,10 +21,19 @@ import kotlinx.coroutines.delay
  * automatiquement toutes les 10 secondes si elle a été activée - exactement
  * le même comportement que côté Android, aucune action requise de
  * l'utilisateur au-delà de communiquer sa clé.
+ *
+ * CORRECTIF (mise à jour conforme à la version Android) : jusqu'ici cet
+ * écran n'affichait la clé qu'en texte, obligeant à la recopier caractère
+ * par caractère dans le panel admin. On affiche maintenant, comme sur
+ * Android (LicenseActivity + QrCodeGenerator), un QR code encodant
+ * "SOLPLAY:<clé>" directement à l'ouverture de l'application Windows :
+ * l'administrateur le scanne avec son téléphone pour activer l'appareil
+ * sans ressaisie manuelle.
  */
 @Composable
 fun LicenseScreen(context: Context, onLicensed: () -> Unit) {
     val deviceKey = remember { DeviceKeyManager.getDeviceKey(context) }
+    val qrBitmap: ImageBitmap? = remember(deviceKey) { QrCodeGenerator.generateForDeviceKey(deviceKey) }
     var checking by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var remainingTrialText by remember { mutableStateOf("") }
@@ -52,8 +64,18 @@ fun LicenseScreen(context: Context, onLicensed: () -> Unit) {
             Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Activation SolPlay", style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(16.dp))
-                Text("Communiquez cette clé à votre revendeur pour activer cet ordinateur :")
-                Spacer(Modifier.height(8.dp))
+                Text("Scannez ce code avec l'application admin, ou communiquez la clé ci-dessous à votre revendeur :")
+                Spacer(Modifier.height(16.dp))
+                if (qrBitmap != null) {
+                    Card(modifier = Modifier.size(220.dp)) {
+                        Image(
+                            bitmap = qrBitmap,
+                            contentDescription = "QR code d'activation",
+                            modifier = Modifier.fillMaxSize().padding(8.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+                }
                 SelectionContainer {
                     Text(deviceKey, style = MaterialTheme.typography.titleLarge)
                 }
