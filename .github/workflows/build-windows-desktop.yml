@@ -1,14 +1,7 @@
-name: Build Windows Desktop App
+name: Build SolPlay Desktop (Windows)
 
-# Déclenchement :
-# - manuel (bouton "Run workflow" dans l'onglet Actions de GitHub) ;
-# - automatique sur un tag "vX.Y.Z" poussé sur le repo, pratique pour
-#   publier une version numérotée sans y penser.
-#
-# Hypothèse de structure du repo (à ajuster si votre arborescence diffère) :
-#   /backend    -> crimtrack-backend (FastAPI)
-#   /frontend   -> crimtrack-frontend (HTML/JS statique)
-#   /desktop    -> crimtrack-desktop (Electron), ce dossier
+# Lancement manuel (onglet Actions > Run workflow) ou automatique
+# quand un tag de version "vX.Y.Z" est poussé.
 on:
   workflow_dispatch:
   push:
@@ -20,57 +13,50 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Récupérer le code
+        uses: actions/checkout@v4
 
-      - name: Installer Python
-        uses: actions/setup-python@v5
+      - name: Installer Java 17
+        uses: actions/setup-java@v4
         with:
-          python-version: "3.11"
+          distribution: temurin
+          java-version: "17"
 
-      - name: Installer les dépendances backend
-        working-directory: backend
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pyinstaller
-
-      - name: Compiler le backend en exécutable (PyInstaller)
-        working-directory: backend
-        run: |
-          pyinstaller --onefile --name crimtrack-backend `
-            --collect-all pytesseract `
-            --collect-all cv2 `
-            --hidden-import passlib.handlers.bcrypt `
-            run_desktop.py
-
-      - name: Préparer les ressources pour Electron
-        run: |
-          New-Item -ItemType Directory -Force -Path desktop/resources/backend
-          New-Item -ItemType Directory -Force -Path desktop/resources/frontend
-          Copy-Item backend/dist/crimtrack-backend.exe desktop/resources/backend/
-          Copy-Item -Recurse frontend/* desktop/resources/frontend/
-
-      - name: Installer Node.js
-        uses: actions/setup-node@v4
+      - name: Installer Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          node-version: "20"
+          gradle-version: "8.7"
 
-      - name: Installer les dépendances Electron
-        working-directory: desktop
-        run: npm install
+      - name: Construire les installeurs (.msi et .exe)
+        # TMDB_API_KEY : secret de dépôt optionnel (Settings > Secrets > Actions).
+        # Sans lui, l'app fonctionne mais sans affiches TMDB.
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        # Build RELEASE à partir d'un tag "vX.Y.Z" : la version de
+        # l'installeur est fixée explicitement (-PreleaseVersion), donc
+        # stable et déterministe pour un même tag. Les builds intermédiaires
+        # (workflow_dispatch sans tag) gardent la version 1.0.<run>.
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $ver = "${{ github.ref_name }}".TrimStart("v".ToCharArray())
+            gradle packageMsi packageExe "-PreleaseVersion=$ver"
+          } else {
+            gradle packageMsi packageExe
+          }
 
-      - name: Construire l'installeur Windows
-        working-directory: desktop
-        run: npm run dist:win
-
-      - name: Publier l'installeur comme artefact du build
+      - name: Publier les installeurs comme artefacts
         uses: actions/upload-artifact@v4
         with:
-          name: CrimTrack-installer-windows
-          path: desktop/dist/*.exe
+          name: SolPlay-Desktop-windows
+          path: |
+            build/compose/binaries/main/msi/*.msi
+            build/compose/binaries/main/exe/*.exe
 
       - name: Publier une Release GitHub (si le build vient d'un tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: desktop/dist/*.exe
+          files: |
+            build/compose/binaries/main/msi/*.msi
+            build/compose/binaries/main/exe/*.exe
